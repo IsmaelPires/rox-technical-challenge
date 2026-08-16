@@ -1,0 +1,29 @@
+@Rox.FinancialControl.Api_HostAddress = http://localhost:5080
+
+GET {{Rox.FinancialControl.Api_HostAddress}}/health
+Accept: application/json
+
+###
+
+POST {{Rox.FinancialControl.Api_HostAddress}}/api/cash-entries
+Content-Type: application/json
+
+{
+  "businessDate": "2026-08-14",
+  "type": "Credit",
+  "amount": 120.50,
+  "description": "Venda local",
+  "occurredAt": null
+}
+
+###
+
+GET {{Rox.FinancialControl.Api_HostAddress}}/api/cash-entries?from=2026-08-14&to=2026-08-14
+Accept: application/json
+
+###
+
+GET {{Rox.FinancialControl.Api_HostAddress}}/api/daily-balances?from=2026-08-14&to=2026-08-14
+Accept: application/json
+
+###

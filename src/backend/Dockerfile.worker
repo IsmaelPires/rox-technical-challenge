@@ -1,0 +1,21 @@
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+ENV DOTNET_CLI_TELEMETRY_OPTOUT=1 \
+    DOTNET_NOLOGO=1
+
+COPY Rox.FinancialControl.slnx ./
+COPY Directory.Build.props ./
+COPY Rox.FinancialControl.Application/Rox.FinancialControl.Application.csproj Rox.FinancialControl.Application/
+COPY Rox.FinancialControl.Domain/Rox.FinancialControl.Domain.csproj Rox.FinancialControl.Domain/
+COPY Rox.FinancialControl.Infrastructure/Rox.FinancialControl.Infrastructure.csproj Rox.FinancialControl.Infrastructure/
+COPY Rox.FinancialControl.Worker/Rox.FinancialControl.Worker.csproj Rox.FinancialControl.Worker/
+
+RUN dotnet restore Rox.FinancialControl.Worker/Rox.FinancialControl.Worker.csproj --disable-parallel -p:NuGetAudit=false
+
+COPY . .
+RUN dotnet publish Rox.FinancialControl.Worker/Rox.FinancialControl.Worker.csproj -c Release -o /app/publish --no-restore
+
+FROM mcr.microsoft.com/dotnet/runtime:10.0 AS runtime
+WORKDIR /app
+COPY --from=build /app/publish .
+ENTRYPOINT ["dotnet", "Rox.FinancialControl.Worker.dll"]

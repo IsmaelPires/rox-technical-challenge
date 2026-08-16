@@ -1,0 +1,77 @@
+name: rox-financial-control
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: rox-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:-Your_strong_password123}"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: rox-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: "${RABBITMQ_USERNAME:-guest}"
+      RABBITMQ_DEFAULT_PASS: "${RABBITMQ_PASSWORD:-guest}"
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+
+  api:
+    build:
+      context: ./src/backend
+      dockerfile: Dockerfile.api
+    container_name: rox-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=RoxFinancialControl;User Id=sa;Password=${MSSQL_SA_PASSWORD:-Your_strong_password123};TrustServerCertificate=True;MultipleActiveResultSets=True"
+      RabbitMq__Host: "rabbitmq"
+      RabbitMq__VirtualHost: "/"
+      RabbitMq__Username: "${RABBITMQ_USERNAME:-guest}"
+      RabbitMq__Password: "${RABBITMQ_PASSWORD:-guest}"
+      RabbitMq__ConsolidationQueueName: "cash-entry-consolidation"
+      Outbox__BatchSize: "50"
+      Outbox__PollingIntervalSeconds: "3"
+    ports:
+      - "5080:8080"
+    depends_on:
+      - sqlserver
+      - rabbitmq
+
+  worker:
+    build:
+      context: ./src/backend
+      dockerfile: Dockerfile.worker
+    container_name: rox-worker
+    environment:
+      DOTNET_ENVIRONMENT: "Development"
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=RoxFinancialControl;User Id=sa;Password=${MSSQL_SA_PASSWORD:-Your_strong_password123};TrustServerCertificate=True;MultipleActiveResultSets=True"
+      RabbitMq__Host: "rabbitmq"
+      RabbitMq__VirtualHost: "/"
+      RabbitMq__Username: "${RABBITMQ_USERNAME:-guest}"
+      RabbitMq__Password: "${RABBITMQ_PASSWORD:-guest}"
+      RabbitMq__ConsolidationQueueName: "cash-entry-consolidation"
+    depends_on:
+      - sqlserver
+      - rabbitmq
+
+  web:
+    build:
+      context: ./src/frontend/rox-financial-control-web
+    container_name: rox-web
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+
+volumes:
+  sqlserver-data:
+  rabbitmq-data:

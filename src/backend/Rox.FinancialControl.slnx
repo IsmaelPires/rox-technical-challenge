@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="Rox.FinancialControl.Api/Rox.FinancialControl.Api.csproj" />
+  <Project Path="Rox.FinancialControl.Application/Rox.FinancialControl.Application.csproj" />
+  <Project Path="Rox.FinancialControl.Domain/Rox.FinancialControl.Domain.csproj" />
+  <Project Path="Rox.FinancialControl.Infrastructure/Rox.FinancialControl.Infrastructure.csproj" />
+  <Project Path="Rox.FinancialControl.Tests/Rox.FinancialControl.Tests.csproj" />
+  <Project Path="Rox.FinancialControl.Worker/Rox.FinancialControl.Worker.csproj" />
+</Solution>

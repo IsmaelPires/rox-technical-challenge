@@ -1,0 +1,32 @@
+# Build output
+bin/
+obj/
+dist/
+coverage/
+TestResults/
+*.tsbuildinfo
+
+# Frontend dependencies
+node_modules/
+
+# Local environment
+.env
+.env.local
+*.user
+*.suo
+
+# IDE
+.vs/
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+
+# Generated review artifacts
+tmp/
