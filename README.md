@@ -25,6 +25,16 @@ React Web
 
 A API salva o lançamento e a mensagem de outbox na mesma transação lógica do EF Core. Se o worker de consolidação falhar, a aplicação de gestão continua gravando lançamentos. Quando a fila/worker voltar, o publisher envia as mensagens pendentes e o worker atualiza o saldo diário. O worker registra cada `CashEntryId` processado para evitar duplicidade em caso de retry.
 
+Os lançamentos são segregados pela origem:
+
+- `Business`: lançamentos reais criados pela tela principal e usados nos relatórios operacionais.
+- `Validation`: lançamentos gerados pela rotina automatizada de validação funcional.
+- `LoadSimulation`: lançamentos gerados pela simulação de carga.
+
+Por padrão, consultas de lançamentos, saldos e relatórios usam apenas `Business`. Assim, testes automatizados e simulações não contaminam o saldo real do fluxo de caixa.
+
+Na tela `Lançamentos`, o filtro `Origem` permite alternar entre dados reais, validação funcional e teste de carga. O saldo consolidado, a tabela e o relatório baixado acompanham a origem selecionada.
+
 Mais detalhes e diagramas: [docs/architecture.md](docs/architecture.md).
 
 ## Pré-requisitos
@@ -60,6 +70,47 @@ Credenciais locais:
 - RabbitMQ user/password: `guest` / `guest`
 
 No Docker, o frontend chama a API por `/api` e o Nginx do container `web` faz proxy interno para `api:8080`. Isso evita problemas de CORS ou de diferença entre `localhost` e `127.0.0.1` no navegador.
+
+### Validação funcional automatizada
+
+Ao subir pelo Docker Compose, o `worker` também executa uma rotina agendada de validação funcional. Por padrão, ela roda uma vez após a inicialização e depois a cada 5 minutos, chamando a API para criar lançamentos controlados, validar regras de negócio, aguardar a consolidação assíncrona e conferir o saldo final.
+
+Esses lançamentos são gravados com origem `Validation`. Eles passam pela mesma API, outbox, RabbitMQ, worker e SQL Server, mas são consolidados em saldos separados dos lançamentos reais.
+
+Principais parâmetros no `.env`:
+
+```env
+VALIDATION_SCHEDULER_ENABLED=true
+VALIDATION_SCHEDULER_MODE=Interval
+VALIDATION_SCHEDULER_INTERVAL_MINUTES=5
+VALIDATION_SCHEDULER_RUN_ON_STARTUP=true
+VALIDATION_SCHEDULER_ENTRIES_COUNT=8
+VALIDATION_SCHEDULER_CREDIT_PERCENTAGE=50
+VALIDATION_SCHEDULER_CREDIT_AMOUNT=100
+VALIDATION_SCHEDULER_DEBIT_AMOUNT=40
+VALIDATION_SCHEDULER_TIMEOUT_SECONDS=30
+```
+
+Para rodar a cada 10 minutos:
+
+```env
+VALIDATION_SCHEDULER_MODE=Interval
+VALIDATION_SCHEDULER_INTERVAL_MINUTES=10
+```
+
+Para rodar uma vez ao dia:
+
+```env
+VALIDATION_SCHEDULER_MODE=Daily
+VALIDATION_SCHEDULER_DAILY_AT=02:00
+VALIDATION_SCHEDULER_TIME_ZONE=America/Sao_Paulo
+```
+
+Os resultados ficam nos logs do worker:
+
+```powershell
+docker compose logs -f worker
+```
 
 ### RabbitMQ Management
 
@@ -123,6 +174,10 @@ cd src/backend
 dotnet test Rox.FinancialControl.slnx
 ```
 
+A suíte automatizada usa xUnit e cobre regras de domínio, casos de uso de aplicação e consultas de repositório com EF Core InMemory.
+
+A interface também possui a aba `Validação funcional`, que executa uma rotina parametrizável de validação ponta a ponta: criação controlada de lançamentos, verificação das regras inválidas selecionadas, publicação via outbox e conferência do saldo consolidado pelo worker.
+
 ## Endpoints principais
 
 Criar lançamento:
@@ -136,20 +191,21 @@ Content-Type: application/json
   "type": "Credit",
   "amount": 120.50,
   "description": "Venda local",
-  "occurredAt": null
+  "occurredAt": null,
+  "origin": "Business"
 }
 ```
 
 Listar lançamentos:
 
 ```http
-GET /api/cash-entries?from=2026-08-14&to=2026-08-14&page=1&pageSize=20
+GET /api/cash-entries?from=2026-08-14&to=2026-08-14&page=1&pageSize=20&origin=Business
 ```
 
 Listar saldos consolidados:
 
 ```http
-GET /api/daily-balances?from=2026-08-14&to=2026-08-14
+GET /api/daily-balances?from=2026-08-14&to=2026-08-14&origin=Business
 ```
 
 Status da outbox:
@@ -187,6 +243,23 @@ Parar simulação de carga:
 POST /api/operations/load-simulation/stop
 ```
 
+Executar validação funcional automatizada:
+
+```http
+POST /api/operations/business-validation/run
+Content-Type: application/json
+
+{
+  "entriesCount": 8,
+  "creditPercentage": 50,
+  "creditAmount": 100,
+  "debitAmount": 40,
+  "businessDate": "2026-08-15",
+  "timeoutSeconds": 30,
+  "includeInvalidCases": true
+}
+```
+
 ## Decisões técnicas
 
 - Clean Architecture pragmática: Domain não depende de Application, Infrastructure ou API.
@@ -195,6 +268,7 @@ POST /api/operations/load-simulation/stop
 - Outbox evita perda de lançamentos quando a consolidação ou RabbitMQ falham.
 - Worker usa retries exponenciais, retry transitório do SQL Server e idempotência por `processed_cash_entries`.
 - A consolidação diária usa lock transacional por data para evitar deadlocks sob mensagens simultâneas do mesmo dia.
+- Saldos diários são segregados por origem (`Business`, `Validation`, `LoadSimulation`) para impedir que validações ou testes de carga alterem relatórios reais.
 - Frontend separado por áreas funcionais e com cache controlado por TanStack Query.
 - `EnsureCreatedAsync` foi usado para simplificar a execução local do desafio. Em produção, o passo natural seria trocar por migrations versionadas.
 

@@ -60,7 +60,23 @@ services:
       RabbitMq__Username: "${RABBITMQ_USERNAME:-guest}"
       RabbitMq__Password: "${RABBITMQ_PASSWORD:-guest}"
       RabbitMq__ConsolidationQueueName: "cash-entry-consolidation"
+      ValidationScheduler__Enabled: "${VALIDATION_SCHEDULER_ENABLED:-true}"
+      ValidationScheduler__ApiBaseUrl: "http://api:8080"
+      ValidationScheduler__ScheduleMode: "${VALIDATION_SCHEDULER_MODE:-Interval}"
+      ValidationScheduler__RunOnStartup: "${VALIDATION_SCHEDULER_RUN_ON_STARTUP:-true}"
+      ValidationScheduler__StartupDelaySeconds: "${VALIDATION_SCHEDULER_STARTUP_DELAY_SECONDS:-20}"
+      ValidationScheduler__IntervalMinutes: "${VALIDATION_SCHEDULER_INTERVAL_MINUTES:-5}"
+      ValidationScheduler__DailyAt: "${VALIDATION_SCHEDULER_DAILY_AT:-02:00}"
+      ValidationScheduler__TimeZoneId: "${VALIDATION_SCHEDULER_TIME_ZONE:-America/Sao_Paulo}"
+      ValidationScheduler__EntriesCount: "${VALIDATION_SCHEDULER_ENTRIES_COUNT:-8}"
+      ValidationScheduler__CreditPercentage: "${VALIDATION_SCHEDULER_CREDIT_PERCENTAGE:-50}"
+      ValidationScheduler__CreditAmount: "${VALIDATION_SCHEDULER_CREDIT_AMOUNT:-100}"
+      ValidationScheduler__DebitAmount: "${VALIDATION_SCHEDULER_DEBIT_AMOUNT:-40}"
+      ValidationScheduler__BusinessDate: "${VALIDATION_SCHEDULER_BUSINESS_DATE:-}"
+      ValidationScheduler__TimeoutSeconds: "${VALIDATION_SCHEDULER_TIMEOUT_SECONDS:-30}"
+      ValidationScheduler__IncludeInvalidCases: "${VALIDATION_SCHEDULER_INCLUDE_INVALID_CASES:-true}"
     depends_on:
+      - api
       - sqlserver
       - rabbitmq
 

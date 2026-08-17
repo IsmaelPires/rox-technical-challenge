@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Rox.FinancialControl.Api.BusinessValidation;
 using Rox.FinancialControl.Api.LoadSimulation;
 using Rox.FinancialControl.Infrastructure.Persistence;
 
@@ -75,6 +76,19 @@ public static class OperationalEndpoints
         .WithTags("Operations")
         .WithName("StopLoadSimulation")
         .WithSummary("Stops the current load simulation.");
+
+        app.MapPost("/api/operations/business-validation/run", async (
+            StartBusinessValidationRequest request,
+            BusinessValidationRunner runner,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await runner.RunAsync(request, cancellationToken);
+
+            return Results.Ok(result);
+        })
+        .WithTags("Operations")
+        .WithName("RunBusinessValidation")
+        .WithSummary("Runs a configurable automated business validation routine.");
 
         return app;
     }

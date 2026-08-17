@@ -24,6 +24,10 @@ public sealed class CashEntryRegisteredConsumer(
             throw new InvalidOperationException($"Invalid cash entry type received: {message.Type}.");
         }
 
+        var origin = Enum.TryParse<CashEntryOrigin>(message.Origin, ignoreCase: true, out var parsedOrigin)
+            ? parsedOrigin
+            : CashEntryOrigin.Business;
+
         var strategy = dbContext.Database.CreateExecutionStrategy();
         await strategy.ExecuteAsync(async () =>
         {
@@ -31,7 +35,7 @@ public sealed class CashEntryRegisteredConsumer(
                 IsolationLevel.Serializable,
                 context.CancellationToken);
 
-            await AcquireDailyBalanceLockAsync(message.BusinessDate, context.CancellationToken);
+            await AcquireDailyBalanceLockAsync(message.BusinessDate, origin, context.CancellationToken);
 
             var alreadyProcessed = await dbContext.ProcessedCashEntries
                 .AnyAsync(entry => entry.CashEntryId == message.CashEntryId, context.CancellationToken);
@@ -49,12 +53,13 @@ public sealed class CashEntryRegisteredConsumer(
             var now = clock.UtcNow;
             var balance = await dbContext.DailyBalances
                 .SingleOrDefaultAsync(
-                    dailyBalance => dailyBalance.BusinessDate == message.BusinessDate,
+                    dailyBalance => dailyBalance.BusinessDate == message.BusinessDate
+                        && dailyBalance.Origin == origin,
                     context.CancellationToken);
 
             if (balance is null)
             {
-                balance = DailyBalance.Create(message.BusinessDate, now);
+                balance = DailyBalance.Create(message.BusinessDate, origin, now);
                 dbContext.DailyBalances.Add(balance);
             }
 
@@ -63,6 +68,7 @@ public sealed class CashEntryRegisteredConsumer(
                     message.CashEntryId,
                     message.BusinessDate,
                     entryType,
+                    origin,
                     message.Amount),
                 now);
 
@@ -73,13 +79,16 @@ public sealed class CashEntryRegisteredConsumer(
         });
     }
 
-    private async Task AcquireDailyBalanceLockAsync(DateOnly businessDate, CancellationToken cancellationToken)
+    private async Task AcquireDailyBalanceLockAsync(
+        DateOnly businessDate,
+        CashEntryOrigin origin,
+        CancellationToken cancellationToken)
     {
         const string lockMode = "Exclusive";
         const string lockOwner = "Transaction";
         const int lockTimeoutMilliseconds = 10_000;
 
-        var lockName = $"daily-balance:{businessDate:yyyy-MM-dd}";
+        var lockName = $"daily-balance:{origin}:{businessDate:yyyy-MM-dd}";
 
         // Serialize updates for the same business date while allowing different dates to process in parallel.
         await dbContext.Database.ExecuteSqlInterpolatedAsync(

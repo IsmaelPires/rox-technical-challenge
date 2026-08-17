@@ -34,6 +34,7 @@ public sealed class CreateCashEntryHandlerTests
         var message = Assert.IsType<CashEntryRegisteredIntegrationEvent>(outbox.Messages.Single());
         Assert.Equal(response.Id, message.CashEntryId);
         Assert.Equal("Credit", message.Type);
+        Assert.Equal("Business", message.Origin);
         Assert.Equal(199.90m, message.Amount);
     }
 

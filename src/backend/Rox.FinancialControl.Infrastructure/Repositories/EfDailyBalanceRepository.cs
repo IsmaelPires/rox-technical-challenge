@@ -2,17 +2,23 @@ using Microsoft.EntityFrameworkCore;
 using Rox.FinancialControl.Application.Abstractions;
 using Rox.FinancialControl.Application.Balances;
 using Rox.FinancialControl.Domain.Balances;
+using Rox.FinancialControl.Domain.Entries;
 using Rox.FinancialControl.Infrastructure.Persistence;
 
 namespace Rox.FinancialControl.Infrastructure.Repositories;
 
 public sealed class EfDailyBalanceRepository(ApplicationDbContext dbContext) : IDailyBalanceRepository
 {
-    public Task<DailyBalance?> GetByDateAsync(DateOnly businessDate, CancellationToken cancellationToken)
+    public Task<DailyBalance?> GetByDateAsync(
+        DateOnly businessDate,
+        CashEntryOrigin origin,
+        CancellationToken cancellationToken)
     {
         return dbContext.DailyBalances
             .AsNoTracking()
-            .SingleOrDefaultAsync(balance => balance.BusinessDate == businessDate, cancellationToken);
+            .SingleOrDefaultAsync(
+                balance => balance.BusinessDate == businessDate && balance.Origin == origin,
+                cancellationToken);
     }
 
     public async Task<IReadOnlyCollection<DailyBalance>> ListAsync(
@@ -30,6 +36,8 @@ public sealed class EfDailyBalanceRepository(ApplicationDbContext dbContext) : I
         {
             balances = balances.Where(balance => balance.BusinessDate <= query.To.Value);
         }
+
+        balances = balances.Where(balance => balance.Origin == query.Origin);
 
         return await balances
             .OrderByDescending(balance => balance.BusinessDate)

@@ -5,4 +5,5 @@ public sealed record CreateCashEntryRequest(
     string Type,
     decimal Amount,
     string Description,
-    DateTimeOffset? OccurredAt);
+    DateTimeOffset? OccurredAt,
+    string? Origin = null);

@@ -4,6 +4,8 @@
 
 O sistema registra lançamentos financeiros de crédito/débito e consolida saldos diários sem bloquear a aplicação de gestão quando a consolidação estiver indisponível.
 
+Também há rotinas de validação funcional e simulação de carga. Esses fluxos usam a mesma infraestrutura produtiva da aplicação, mas seus lançamentos são segregados por origem para não interferirem nos saldos reais.
+
 ## C4 - Container
 
 ```mermaid
@@ -46,8 +48,33 @@ sequenceDiagram
   Pub->>Rabbit: publish CashEntryRegisteredIntegrationEvent
   Pub->>Sql: mark outbox processed
   Rabbit->>Worker: deliver message
-  Worker->>Sql: upsert daily_balances + processed_cash_entries
+  Worker->>Sql: upsert daily_balances by BusinessDate + Origin
+  Worker->>Sql: insert processed_cash_entries
 ```
+
+## Segregação por origem
+
+```mermaid
+flowchart LR
+  real["Tela principal"] --> business["Origin = Business"]
+  validation["Validação funcional"] --> validationOrigin["Origin = Validation"]
+  load["Simulação de carga"] --> loadOrigin["Origin = LoadSimulation"]
+
+  business --> outbox["Outbox + RabbitMQ"]
+  validationOrigin --> outbox
+  loadOrigin --> outbox
+
+  outbox --> worker["Worker de consolidação"]
+  worker --> balances[("daily_balances por BusinessDate + Origin")]
+
+  balances --> report["Relatórios e tela principal consultam Business por padrão"]
+```
+
+- `Business`: dados reais criados pelo usuário e exibidos nos relatórios operacionais.
+- `Validation`: dados da rotina automatizada que valida regras e consolidação assíncrona.
+- `LoadSimulation`: dados gerados para testar vazão e resiliência.
+
+A separação fica no domínio, na persistência, nas mensagens e nas consultas. Dessa forma, a validação automatizada percorre o mesmo caminho técnico do lançamento real, mas não altera o saldo consolidado usado pela operação.
 
 ## Resiliência
 
@@ -65,6 +92,7 @@ erDiagram
     uniqueidentifier Id PK
     date BusinessDate
     string Type
+    string Origin
     decimal Amount
     string Description
     datetimeoffset OccurredAt
@@ -73,6 +101,7 @@ erDiagram
 
   DAILY_BALANCES {
     date BusinessDate PK
+    string Origin PK
     decimal TotalCredits
     decimal TotalDebits
     int EntriesCount

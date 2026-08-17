@@ -1,20 +1,29 @@
 import { useQuery } from "@tanstack/react-query";
 import { ArrowDownCircle, ArrowUpCircle } from "lucide-react";
 import { api } from "../../api/client";
+import type { CashEntryOrigin } from "../../api/types";
 import { EmptyState } from "../../components/EmptyState";
 import { StatusBadge } from "../../components/StatusBadge";
 import { formatCurrency, formatDate, formatDateTime } from "../formatters";
+import { originLabels } from "../origins";
 
 type CashEntryTableProps = {
   from: string;
   to: string;
+  origin: CashEntryOrigin;
   refreshKey: number;
 };
 
-export function CashEntryTable({ from, to, refreshKey }: CashEntryTableProps) {
+const originBadgeTone: Record<CashEntryOrigin, "neutral" | "good" | "danger" | "warning"> = {
+  Business: "neutral",
+  Validation: "warning",
+  LoadSimulation: "good"
+};
+
+export function CashEntryTable({ from, to, origin, refreshKey }: CashEntryTableProps) {
   const { data, isLoading, error } = useQuery({
-    queryKey: ["cash-entries", from, to, refreshKey],
-    queryFn: () => api.listCashEntries({ from, to, page: 1, pageSize: 25 })
+    queryKey: ["cash-entries", from, to, origin, refreshKey],
+    queryFn: () => api.listCashEntries({ from, to, origin, page: 1, pageSize: 25 })
   });
 
   if (isLoading) {
@@ -26,7 +35,7 @@ export function CashEntryTable({ from, to, refreshKey }: CashEntryTableProps) {
   }
 
   if (!data || data.items.length === 0) {
-    return <EmptyState title="Sem lançamentos" description="Nenhum registro encontrado no período." />;
+    return <EmptyState title="Sem lançamentos" description="Nenhum registro encontrado para a origem selecionada." />;
   }
 
   return (
@@ -36,6 +45,7 @@ export function CashEntryTable({ from, to, refreshKey }: CashEntryTableProps) {
           <tr>
             <th>Data</th>
             <th>Tipo</th>
+            <th>Origem</th>
             <th>Descrição</th>
             <th className="align-right">Valor</th>
             <th>Registro</th>
@@ -50,6 +60,9 @@ export function CashEntryTable({ from, to, refreshKey }: CashEntryTableProps) {
                   {entry.type === "Credit" ? <ArrowUpCircle size={14} /> : <ArrowDownCircle size={14} />}
                   {entry.type === "Credit" ? "Crédito" : "Débito"}
                 </StatusBadge>
+              </td>
+              <td>
+                <StatusBadge tone={originBadgeTone[entry.origin]}>{originLabels[entry.origin]}</StatusBadge>
               </td>
               <td>{entry.description}</td>
               <td className="align-right">{formatCurrency(entry.amount)}</td>

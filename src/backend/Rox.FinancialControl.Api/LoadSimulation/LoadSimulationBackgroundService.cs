@@ -101,7 +101,8 @@ public sealed class LoadSimulationBackgroundService(
             isCredit ? "Credit" : "Debit",
             amount,
             $"Simulação de carga - {(isCredit ? "crédito" : "débito")} #{index}",
-            occurredAt);
+            occurredAt,
+            "LoadSimulation");
     }
 
     private static decimal NextAmount(decimal min, decimal max)

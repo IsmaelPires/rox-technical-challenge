@@ -11,10 +11,11 @@ public static class DailyBalanceEndpoints
 
         group.MapGet("{businessDate}", async (
             DateOnly businessDate,
+            string? origin,
             GetDailyBalanceHandler handler,
             CancellationToken cancellationToken) =>
         {
-            var response = await handler.HandleAsync(businessDate, cancellationToken);
+            var response = await handler.HandleAsync(businessDate, origin, cancellationToken);
 
             return Results.Ok(response);
         })
@@ -24,10 +25,11 @@ public static class DailyBalanceEndpoints
         group.MapGet("", async (
             DateOnly? from,
             DateOnly? to,
+            string? origin,
             ListDailyBalancesHandler handler,
             CancellationToken cancellationToken) =>
         {
-            var response = await handler.HandleAsync(from, to, cancellationToken);
+            var response = await handler.HandleAsync(from, to, origin, cancellationToken);
 
             return Results.Ok(response);
         })

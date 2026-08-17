@@ -1,9 +1,11 @@
 export type CashEntryType = "Credit" | "Debit";
+export type CashEntryOrigin = "Business" | "Validation" | "LoadSimulation";
 
 export type CashEntry = {
   id: string;
   businessDate: string;
   type: CashEntryType;
+  origin: CashEntryOrigin;
   amount: number;
   description: string;
   occurredAt: string;
@@ -12,6 +14,7 @@ export type CashEntry = {
 
 export type DailyBalance = {
   businessDate: string;
+  origin: CashEntryOrigin;
   totalCredits: number;
   totalDebits: number;
   balance: number;
@@ -33,6 +36,7 @@ export type CreateCashEntryPayload = {
   amount: number;
   description: string;
   occurredAt?: string | null;
+  origin?: CashEntryOrigin | null;
 };
 
 export type OutboxStatus = {
@@ -75,4 +79,43 @@ export type LoadSimulationStatus = {
     statusCode: number;
     message: string;
   }>;
+};
+
+export type BusinessValidationPayload = {
+  entriesCount: number;
+  creditPercentage: number;
+  creditAmount: number;
+  debitAmount: number;
+  businessDate: string | null;
+  timeoutSeconds: number;
+  includeInvalidCases: boolean;
+};
+
+export type BusinessValidationStep = {
+  name: string;
+  passed: boolean;
+  expected: string;
+  actual: string;
+  details: string | null;
+};
+
+export type BusinessValidationResult = {
+  runId: string;
+  passed: boolean;
+  startedAt: string;
+  finishedAt: string;
+  configuration: BusinessValidationPayload & {
+    businessDate: string;
+  };
+  totals: {
+    createdEntries: number;
+    expectedCredits: number;
+    expectedDebits: number;
+    expectedBalance: number;
+    observedCredits: number;
+    observedDebits: number;
+    observedBalance: number;
+    observedEntriesCount: number;
+  };
+  steps: BusinessValidationStep[];
 };

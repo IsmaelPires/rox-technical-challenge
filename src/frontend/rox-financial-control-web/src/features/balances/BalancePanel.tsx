@@ -1,19 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
 import { CircleDollarSign, TrendingDown, TrendingUp } from "lucide-react";
 import { api } from "../../api/client";
+import type { CashEntryOrigin } from "../../api/types";
 import { EmptyState } from "../../components/EmptyState";
 import { formatCurrency } from "../formatters";
 
 type BalancePanelProps = {
   from: string;
   to: string;
+  origin: CashEntryOrigin;
   refreshKey: number;
 };
 
-export function BalancePanel({ from, to, refreshKey }: BalancePanelProps) {
+export function BalancePanel({ from, to, origin, refreshKey }: BalancePanelProps) {
   const { data, isLoading, error } = useQuery({
-    queryKey: ["daily-balances", from, to, refreshKey],
-    queryFn: () => api.listDailyBalances({ from, to }),
+    queryKey: ["daily-balances", from, to, origin, refreshKey],
+    queryFn: () => api.listDailyBalances({ from, to, origin }),
     refetchInterval: 5000
   });
 

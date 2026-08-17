@@ -10,6 +10,7 @@ public static class CashEntryMappings
             entry.Id,
             entry.BusinessDate,
             entry.Type.ToString(),
+            entry.Origin.ToString(),
             entry.Amount,
             entry.Description,
             entry.OccurredAt,

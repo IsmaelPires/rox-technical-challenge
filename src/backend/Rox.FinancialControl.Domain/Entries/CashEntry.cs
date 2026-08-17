@@ -13,6 +13,7 @@ public sealed class CashEntry
         Guid id,
         DateOnly businessDate,
         CashEntryType type,
+        CashEntryOrigin origin,
         decimal amount,
         string description,
         DateTimeOffset occurredAt,
@@ -21,6 +22,7 @@ public sealed class CashEntry
         Id = id;
         BusinessDate = businessDate;
         Type = type;
+        Origin = origin;
         Amount = amount;
         Description = description;
         OccurredAt = occurredAt;
@@ -33,6 +35,8 @@ public sealed class CashEntry
 
     public CashEntryType Type { get; private set; }
 
+    public CashEntryOrigin Origin { get; private set; }
+
     public decimal Amount { get; private set; }
 
     public string Description { get; private set; }
@@ -44,6 +48,7 @@ public sealed class CashEntry
     public static CashEntry Create(
         DateOnly businessDate,
         CashEntryType type,
+        CashEntryOrigin origin,
         decimal amount,
         string description,
         DateTimeOffset occurredAt,
@@ -57,6 +62,11 @@ public sealed class CashEntry
         if (!Enum.IsDefined(type))
         {
             throw new DomainException("O tipo do lançamento deve ser Credit ou Debit.");
+        }
+
+        if (!Enum.IsDefined(origin))
+        {
+            throw new DomainException("A origem do lançamento é inválida.");
         }
 
         if (amount <= 0)
@@ -84,6 +94,7 @@ public sealed class CashEntry
             Guid.NewGuid(),
             businessDate,
             type,
+            origin,
             decimal.Round(amount, 2, MidpointRounding.AwayFromZero),
             normalizedDescription,
             occurredAt,
@@ -92,6 +103,6 @@ public sealed class CashEntry
 
     public CashEntrySnapshot ToSnapshot()
     {
-        return new CashEntrySnapshot(Id, BusinessDate, Type, Amount);
+        return new CashEntrySnapshot(Id, BusinessDate, Type, Origin, Amount);
     }
 }

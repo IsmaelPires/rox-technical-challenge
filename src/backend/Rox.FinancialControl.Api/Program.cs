@@ -1,4 +1,5 @@
 using Rox.FinancialControl.Api.Endpoints;
+using Rox.FinancialControl.Api.BusinessValidation;
 using Rox.FinancialControl.Api.LoadSimulation;
 using Rox.FinancialControl.Api.Middleware;
 using Rox.FinancialControl.Application;
@@ -9,6 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddApplication();
 builder.Services.AddApiInfrastructure(builder.Configuration);
+builder.Services.AddScoped<BusinessValidationRunner>();
 builder.Services.Configure<LoadSimulationOptions>(builder.Configuration.GetSection(LoadSimulationOptions.SectionName));
 builder.Services.AddSingleton<LoadSimulationState>();
 builder.Services.AddHostedService<LoadSimulationBackgroundService>();

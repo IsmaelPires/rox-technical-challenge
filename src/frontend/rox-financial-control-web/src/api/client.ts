@@ -1,5 +1,8 @@
 import type {
+  BusinessValidationPayload,
+  BusinessValidationResult,
   CashEntry,
+  CashEntryOrigin,
   CashEntryType,
   CreateCashEntryPayload,
   DailyBalance,
@@ -16,6 +19,7 @@ type CashEntryFilters = {
   from?: string;
   to?: string;
   type?: CashEntryType | "";
+  origin?: CashEntryOrigin;
   page?: number;
   pageSize?: number;
 };
@@ -23,6 +27,7 @@ type CashEntryFilters = {
 type BalanceFilters = {
   from?: string;
   to?: string;
+  origin?: CashEntryOrigin;
 };
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -68,6 +73,7 @@ export const api = {
         from: filters.from,
         to: filters.to,
         type: filters.type,
+        origin: filters.origin ?? "Business",
         page: filters.page ?? 1,
         pageSize: filters.pageSize ?? 20
       })}`
@@ -78,7 +84,8 @@ export const api = {
     return request<DailyBalance[]>(
       `/api/daily-balances${toQuery({
         from: filters.from,
-        to: filters.to
+        to: filters.to,
+        origin: filters.origin ?? "Business"
       })}`
     );
   },
@@ -101,6 +108,13 @@ export const api = {
   stopLoadSimulation() {
     return request<LoadSimulationStatus>("/api/operations/load-simulation/stop", {
       method: "POST"
+    });
+  },
+
+  runBusinessValidation(payload: BusinessValidationPayload) {
+    return request<BusinessValidationResult>("/api/operations/business-validation/run", {
+      method: "POST",
+      body: JSON.stringify(payload)
     });
   }
 };

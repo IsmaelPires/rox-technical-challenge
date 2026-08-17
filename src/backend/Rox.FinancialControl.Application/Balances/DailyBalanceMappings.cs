@@ -8,6 +8,7 @@ public static class DailyBalanceMappings
     {
         return new DailyBalanceDto(
             balance.BusinessDate,
+            balance.Origin.ToString(),
             balance.TotalCredits,
             balance.TotalDebits,
             balance.Balance,

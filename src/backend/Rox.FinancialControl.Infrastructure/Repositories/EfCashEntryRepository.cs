@@ -40,6 +40,8 @@ public sealed class EfCashEntryRepository(ApplicationDbContext dbContext) : ICas
             entries = entries.Where(entry => entry.Type == query.Type.Value);
         }
 
+        entries = entries.Where(entry => entry.Origin == query.Origin);
+
         var totalItems = await entries.CountAsync(cancellationToken);
         var items = await entries
             .OrderByDescending(entry => entry.BusinessDate)

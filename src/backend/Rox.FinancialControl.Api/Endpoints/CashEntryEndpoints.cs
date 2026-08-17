@@ -37,6 +37,7 @@ public static class CashEntryEndpoints
             DateOnly? from,
             DateOnly? to,
             string? type,
+            string? origin,
             int? page,
             int? pageSize,
             ListCashEntriesHandler handler,
@@ -46,6 +47,7 @@ public static class CashEntryEndpoints
                 from,
                 to,
                 type,
+                origin,
                 page ?? 1,
                 pageSize ?? 20,
                 cancellationToken);

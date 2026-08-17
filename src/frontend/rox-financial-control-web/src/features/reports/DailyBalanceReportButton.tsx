@@ -1,12 +1,14 @@
 import { Download } from "lucide-react";
 import { useState } from "react";
 import { api } from "../../api/client";
-import type { DailyBalance } from "../../api/types";
+import type { CashEntryOrigin, DailyBalance } from "../../api/types";
 import { formatDate, formatDateTime } from "../formatters";
+import { originLabels } from "../origins";
 
 type DailyBalanceReportButtonProps = {
   from: string;
   to: string;
+  origin: CashEntryOrigin;
 };
 
 const numberFormatter = new Intl.NumberFormat("pt-BR", {
@@ -23,7 +25,7 @@ function csvRow(values: Array<string | number>) {
   return values.map(csvCell).join(";");
 }
 
-function buildReportRows(from: string, to: string, balances: DailyBalance[]) {
+function buildReportRows(from: string, to: string, origin: CashEntryOrigin, balances: DailyBalance[]) {
   const orderedBalances = [...balances].sort((a, b) => a.businessDate.localeCompare(b.businessDate));
   const totals = orderedBalances.reduce(
     (acc, item) => ({
@@ -38,6 +40,7 @@ function buildReportRows(from: string, to: string, balances: DailyBalance[]) {
   return [
     csvRow(["Relatório de saldo consolidado diário"]),
     csvRow(["Período", `${formatDate(from)} a ${formatDate(to)}`]),
+    csvRow(["Origem", originLabels[origin]]),
     csvRow(["Gerado em", formatDateTime(new Date().toISOString())]),
     "",
     csvRow([
@@ -69,6 +72,12 @@ function buildReportRows(from: string, to: string, balances: DailyBalance[]) {
   ];
 }
 
+const originFileNames: Record<CashEntryOrigin, string> = {
+  Business: "reais",
+  Validation: "validacao",
+  LoadSimulation: "teste-carga"
+};
+
 function downloadCsv(filename: string, rows: string[]) {
   const csv = `\uFEFF${rows.join("\r\n")}`;
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
@@ -82,7 +91,7 @@ function downloadCsv(filename: string, rows: string[]) {
   URL.revokeObjectURL(url);
 }
 
-export function DailyBalanceReportButton({ from, to }: DailyBalanceReportButtonProps) {
+export function DailyBalanceReportButton({ from, to, origin }: DailyBalanceReportButtonProps) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -91,9 +100,9 @@ export function DailyBalanceReportButton({ from, to }: DailyBalanceReportButtonP
     setIsDownloading(true);
 
     try {
-      const balances = await api.listDailyBalances({ from, to });
-      const rows = buildReportRows(from, to, balances);
-      downloadCsv(`saldo-consolidado_${from}_${to}.csv`, rows);
+      const balances = await api.listDailyBalances({ from, to, origin });
+      const rows = buildReportRows(from, to, origin, balances);
+      downloadCsv(`saldo-consolidado_${originFileNames[origin]}_${from}_${to}.csv`, rows);
     } catch (downloadError) {
       setError(downloadError instanceof Error ? downloadError.message : "Não foi possível gerar o relatório.");
     } finally {

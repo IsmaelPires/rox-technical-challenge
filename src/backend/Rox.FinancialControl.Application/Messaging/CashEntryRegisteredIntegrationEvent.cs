@@ -7,4 +7,5 @@ public sealed record CashEntryRegisteredIntegrationEvent(
     decimal Amount,
     string Description,
     DateTimeOffset OccurredAt,
-    DateTimeOffset RegisteredAt);
+    DateTimeOffset RegisteredAt,
+    string Origin = "Business");

@@ -9,13 +9,16 @@ public sealed class DailyBalance
     {
     }
 
-    private DailyBalance(DateOnly businessDate, DateTimeOffset createdAt)
+    private DailyBalance(DateOnly businessDate, CashEntryOrigin origin, DateTimeOffset createdAt)
     {
         BusinessDate = businessDate;
+        Origin = origin;
         LastUpdatedAt = createdAt;
     }
 
     public DateOnly BusinessDate { get; private set; }
+
+    public CashEntryOrigin Origin { get; private set; }
 
     public decimal TotalCredits { get; private set; }
 
@@ -27,14 +30,19 @@ public sealed class DailyBalance
 
     public DateTimeOffset LastUpdatedAt { get; private set; }
 
-    public static DailyBalance Create(DateOnly businessDate, DateTimeOffset createdAt)
+    public static DailyBalance Create(DateOnly businessDate, CashEntryOrigin origin, DateTimeOffset createdAt)
     {
         if (businessDate == default)
         {
             throw new DomainException("A data do saldo diário é obrigatória.");
         }
 
-        return new DailyBalance(businessDate, createdAt);
+        if (!Enum.IsDefined(origin))
+        {
+            throw new DomainException("A origem do saldo diário é inválida.");
+        }
+
+        return new DailyBalance(businessDate, origin, createdAt);
     }
 
     public void Apply(CashEntrySnapshot entry, DateTimeOffset processedAt)
@@ -42,6 +50,11 @@ public sealed class DailyBalance
         if (entry.BusinessDate != BusinessDate)
         {
             throw new DomainException("O lançamento não pertence ao dia consolidado.");
+        }
+
+        if (entry.Origin != Origin)
+        {
+            throw new DomainException("O lançamento não pertence à origem consolidada.");
         }
 
         if (entry.Amount <= 0)

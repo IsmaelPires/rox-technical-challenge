@@ -10,10 +10,15 @@ public sealed class DailyBalanceConfiguration : IEntityTypeConfiguration<DailyBa
     {
         builder.ToTable("daily_balances");
 
-        builder.HasKey(balance => balance.BusinessDate);
+        builder.HasKey(balance => new { balance.BusinessDate, balance.Origin });
 
         builder.Property(balance => balance.BusinessDate)
             .HasColumnType("date");
+
+        builder.Property(balance => balance.Origin)
+            .HasConversion<string>()
+            .HasMaxLength(32)
+            .IsRequired();
 
         builder.Property(balance => balance.TotalCredits)
             .HasPrecision(18, 2)

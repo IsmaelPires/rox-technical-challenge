@@ -21,6 +21,11 @@ public sealed class CashEntryConfiguration : IEntityTypeConfiguration<CashEntry>
             .HasMaxLength(16)
             .IsRequired();
 
+        builder.Property(entry => entry.Origin)
+            .HasConversion<string>()
+            .HasMaxLength(32)
+            .IsRequired();
+
         builder.Property(entry => entry.Amount)
             .HasPrecision(18, 2)
             .IsRequired();
@@ -36,6 +41,7 @@ public sealed class CashEntryConfiguration : IEntityTypeConfiguration<CashEntry>
             .IsRequired();
 
         builder.HasIndex(entry => entry.BusinessDate);
+        builder.HasIndex(entry => new { entry.BusinessDate, entry.Origin });
         builder.HasIndex(entry => entry.RegisteredAt);
     }
 }

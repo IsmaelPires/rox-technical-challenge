@@ -10,6 +10,7 @@ public sealed class ListCashEntriesHandler(ICashEntryRepository cashEntryReposit
         DateOnly? from,
         DateOnly? to,
         string? type,
+        string? origin,
         int page,
         int pageSize,
         CancellationToken cancellationToken)
@@ -30,10 +31,17 @@ public sealed class ListCashEntriesHandler(ICashEntryRepository cashEntryReposit
             parsedType = entryType;
         }
 
+        var parsedOrigin = CashEntryOrigin.Business;
+        if (!string.IsNullOrWhiteSpace(origin)
+            && !Enum.TryParse<CashEntryOrigin>(origin, ignoreCase: true, out parsedOrigin))
+        {
+            throw new ValidationException("A origem deve ser Business, Validation ou LoadSimulation.");
+        }
+
         var normalizedPage = Math.Max(1, page);
         var normalizedPageSize = Math.Clamp(pageSize, 1, 100);
         var result = await cashEntryRepository.ListAsync(
-            new CashEntryQuery(from, to, parsedType, normalizedPage, normalizedPageSize),
+            new CashEntryQuery(from, to, parsedType, parsedOrigin, normalizedPage, normalizedPageSize),
             cancellationToken);
 
         return new PagedResult<CashEntryDto>(

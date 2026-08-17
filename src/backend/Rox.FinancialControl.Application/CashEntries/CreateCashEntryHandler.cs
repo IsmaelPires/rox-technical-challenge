@@ -18,11 +18,19 @@ public sealed class CreateCashEntryHandler(
             throw new ValidationException("O tipo deve ser Credit ou Debit.");
         }
 
+        var origin = CashEntryOrigin.Business;
+        if (!string.IsNullOrWhiteSpace(request.Origin)
+            && !Enum.TryParse<CashEntryOrigin>(request.Origin, ignoreCase: true, out origin))
+        {
+            throw new ValidationException("A origem deve ser Business, Validation ou LoadSimulation.");
+        }
+
         var registeredAt = clock.UtcNow;
         var occurredAt = request.OccurredAt ?? registeredAt;
         var entry = CashEntry.Create(
             request.BusinessDate,
             type,
+            origin,
             request.Amount,
             request.Description,
             occurredAt,
@@ -37,7 +45,8 @@ public sealed class CreateCashEntryHandler(
                 entry.Amount,
                 entry.Description,
                 entry.OccurredAt,
-                entry.RegisteredAt),
+                entry.RegisteredAt,
+                entry.Origin.ToString()),
             cancellationToken);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
