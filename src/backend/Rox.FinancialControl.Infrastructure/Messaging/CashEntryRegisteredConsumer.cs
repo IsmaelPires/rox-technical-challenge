@@ -31,6 +31,8 @@ public sealed class CashEntryRegisteredConsumer(
                 IsolationLevel.Serializable,
                 context.CancellationToken);
 
+            await AcquireDailyBalanceLockAsync(message.BusinessDate, context.CancellationToken);
+
             var alreadyProcessed = await dbContext.ProcessedCashEntries
                 .AnyAsync(entry => entry.CashEntryId == message.CashEntryId, context.CancellationToken);
 
@@ -69,5 +71,19 @@ public sealed class CashEntryRegisteredConsumer(
             await dbContext.SaveChangesAsync(context.CancellationToken);
             await transaction.CommitAsync(context.CancellationToken);
         });
+    }
+
+    private async Task AcquireDailyBalanceLockAsync(DateOnly businessDate, CancellationToken cancellationToken)
+    {
+        const string lockMode = "Exclusive";
+        const string lockOwner = "Transaction";
+        const int lockTimeoutMilliseconds = 10_000;
+
+        var lockName = $"daily-balance:{businessDate:yyyy-MM-dd}";
+
+        // Serialize updates for the same business date while allowing different dates to process in parallel.
+        await dbContext.Database.ExecuteSqlInterpolatedAsync(
+            $"DECLARE @Result int; EXEC @Result = sp_getapplock @Resource = {lockName}, @LockMode = {lockMode}, @LockOwner = {lockOwner}, @LockTimeout = {lockTimeoutMilliseconds}; IF @Result < 0 THROW 51000, 'Could not acquire daily balance application lock.', 1;",
+            cancellationToken);
     }
 }

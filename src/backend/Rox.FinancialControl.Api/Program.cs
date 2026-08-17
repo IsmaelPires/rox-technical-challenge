@@ -1,4 +1,5 @@
 using Rox.FinancialControl.Api.Endpoints;
+using Rox.FinancialControl.Api.LoadSimulation;
 using Rox.FinancialControl.Api.Middleware;
 using Rox.FinancialControl.Application;
 using Rox.FinancialControl.Infrastructure;
@@ -8,6 +9,18 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddApplication();
 builder.Services.AddApiInfrastructure(builder.Configuration);
+builder.Services.Configure<LoadSimulationOptions>(builder.Configuration.GetSection(LoadSimulationOptions.SectionName));
+builder.Services.AddSingleton<LoadSimulationState>();
+builder.Services.AddHostedService<LoadSimulationBackgroundService>();
+builder.Services.AddHttpClient(LoadSimulationBackgroundService.HttpClientName, (serviceProvider, client) =>
+{
+    var options = serviceProvider
+        .GetRequiredService<Microsoft.Extensions.Options.IOptions<LoadSimulationOptions>>()
+        .Value;
+
+    client.BaseAddress = new Uri(options.ApiBaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
 builder.Services.AddCors(options =>

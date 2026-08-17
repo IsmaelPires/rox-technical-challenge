@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Rox.FinancialControl.Api.LoadSimulation;
 using Rox.FinancialControl.Infrastructure.Persistence;
 
 namespace Rox.FinancialControl.Api.Endpoints;
@@ -46,6 +47,34 @@ public static class OperationalEndpoints
         .WithTags("Operations")
         .WithName("GetOutboxStatus")
         .WithSummary("Shows outbox publication status.");
+
+        app.MapGet("/api/operations/load-simulation", (LoadSimulationState state) =>
+        {
+            return Results.Ok(state.GetStatus());
+        })
+        .WithTags("Operations")
+        .WithName("GetLoadSimulationStatus")
+        .WithSummary("Shows load simulation status.");
+
+        app.MapPost("/api/operations/load-simulation/start", (
+            StartLoadSimulationRequest request,
+            LoadSimulationState state) =>
+        {
+            return Results.Accepted(
+                "/api/operations/load-simulation",
+                state.Start(request, DateTimeOffset.UtcNow));
+        })
+        .WithTags("Operations")
+        .WithName("StartLoadSimulation")
+        .WithSummary("Starts a configurable cash entry load simulation.");
+
+        app.MapPost("/api/operations/load-simulation/stop", (LoadSimulationState state) =>
+        {
+            return Results.Ok(state.Stop(DateTimeOffset.UtcNow));
+        })
+        .WithTags("Operations")
+        .WithName("StopLoadSimulation")
+        .WithSummary("Stops the current load simulation.");
 
         return app;
     }

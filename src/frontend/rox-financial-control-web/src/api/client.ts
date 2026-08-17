@@ -3,8 +3,10 @@ import type {
   CashEntryType,
   CreateCashEntryPayload,
   DailyBalance,
+  LoadSimulationStatus,
   OutboxStatus,
-  PagedResult
+  PagedResult,
+  StartLoadSimulationPayload
 } from "./types";
 
 const configuredApiBaseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim();
@@ -83,5 +85,22 @@ export const api = {
 
   getOutboxStatus() {
     return request<OutboxStatus>("/api/operations/outbox");
+  },
+
+  getLoadSimulationStatus() {
+    return request<LoadSimulationStatus>("/api/operations/load-simulation");
+  },
+
+  startLoadSimulation(payload: StartLoadSimulationPayload) {
+    return request<LoadSimulationStatus>("/api/operations/load-simulation/start", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+  },
+
+  stopLoadSimulation() {
+    return request<LoadSimulationStatus>("/api/operations/load-simulation/stop", {
+      method: "POST"
+    });
   }
 };

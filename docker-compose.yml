@@ -32,7 +32,7 @@ services:
     container_name: rox-api
     environment:
       ASPNETCORE_ENVIRONMENT: "Development"
-      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=RoxFinancialControl;User Id=sa;Password=${MSSQL_SA_PASSWORD:-Your_strong_password123};TrustServerCertificate=True;MultipleActiveResultSets=True"
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=RoxFinancialControl;User Id=sa;Password=${MSSQL_SA_PASSWORD:-Your_strong_password123};TrustServerCertificate=True"
       RabbitMq__Host: "rabbitmq"
       RabbitMq__VirtualHost: "/"
       RabbitMq__Username: "${RABBITMQ_USERNAME:-guest}"
@@ -40,6 +40,7 @@ services:
       RabbitMq__ConsolidationQueueName: "cash-entry-consolidation"
       Outbox__BatchSize: "50"
       Outbox__PollingIntervalSeconds: "3"
+      LoadSimulation__ApiBaseUrl: "http://localhost:8080"
     ports:
       - "5080:8080"
     depends_on:
@@ -53,7 +54,7 @@ services:
     container_name: rox-worker
     environment:
       DOTNET_ENVIRONMENT: "Development"
-      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=RoxFinancialControl;User Id=sa;Password=${MSSQL_SA_PASSWORD:-Your_strong_password123};TrustServerCertificate=True;MultipleActiveResultSets=True"
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=RoxFinancialControl;User Id=sa;Password=${MSSQL_SA_PASSWORD:-Your_strong_password123};TrustServerCertificate=True"
       RabbitMq__Host: "rabbitmq"
       RabbitMq__VirtualHost: "/"
       RabbitMq__Username: "${RABBITMQ_USERNAME:-guest}"

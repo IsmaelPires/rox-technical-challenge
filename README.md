@@ -158,13 +158,43 @@ Status da outbox:
 GET /api/operations/outbox
 ```
 
+Status da simulação de carga:
+
+```http
+GET /api/operations/load-simulation
+```
+
+Iniciar simulação de carga:
+
+```http
+POST /api/operations/load-simulation/start
+Content-Type: application/json
+
+{
+  "requestsPerBatch": 20,
+  "intervalSeconds": 60,
+  "maxBatches": 10,
+  "creditPercentage": 70,
+  "minAmount": 20,
+  "maxAmount": 600,
+  "businessDate": "2026-08-15"
+}
+```
+
+Parar simulação de carga:
+
+```http
+POST /api/operations/load-simulation/stop
+```
+
 ## Decisões técnicas
 
 - Clean Architecture pragmática: Domain não depende de Application, Infrastructure ou API.
 - Casos de uso explícitos no Application, sem acoplar regras a controllers/endpoints.
 - EF Core encapsulado em repositories e unit of work.
 - Outbox evita perda de lançamentos quando a consolidação ou RabbitMQ falham.
-- Worker usa retries exponenciais e idempotência por `processed_cash_entries`.
+- Worker usa retries exponenciais, retry transitório do SQL Server e idempotência por `processed_cash_entries`.
+- A consolidação diária usa lock transacional por data para evitar deadlocks sob mensagens simultâneas do mesmo dia.
 - Frontend separado por áreas funcionais e com cache controlado por TanStack Query.
 - `EnsureCreatedAsync` foi usado para simplificar a execução local do desafio. Em produção, o passo natural seria trocar por migrations versionadas.
 

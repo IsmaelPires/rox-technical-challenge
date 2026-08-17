@@ -45,3 +45,34 @@ export type OutboxStatus = {
     occurredAt: string;
   }>;
 };
+
+export type LoadSimulationConfiguration = {
+  requestsPerBatch: number;
+  intervalSeconds: number;
+  maxBatches: number | null;
+  creditPercentage: number;
+  minAmount: number;
+  maxAmount: number;
+  businessDate: string | null;
+};
+
+export type StartLoadSimulationPayload = LoadSimulationConfiguration;
+
+export type LoadSimulationStatus = {
+  isRunning: boolean;
+  isBatchRunning: boolean;
+  configuration: LoadSimulationConfiguration | null;
+  startedAt: string | null;
+  stoppedAt: string | null;
+  lastRunAt: string | null;
+  nextRunAt: string | null;
+  batchesExecuted: number;
+  totalRequested: number;
+  totalSucceeded: number;
+  totalFailed: number;
+  lastErrors: Array<{
+    occurredAt: string;
+    statusCode: number;
+    message: string;
+  }>;
+};
