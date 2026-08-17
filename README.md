@@ -43,8 +43,6 @@ Mais detalhes e diagramas: [docs/architecture.md](docs/architecture.md).
 - Node.js 24+
 - Docker Desktop, se quiser rodar o ambiente completo por containers
 
-Nesta máquina, o .NET e o Node já foram encontrados. O Docker não estava disponível no PATH no momento da criação do projeto.
-
 ## Rodando com Docker
 
 Depois de instalar/configurar o Docker Desktop:
