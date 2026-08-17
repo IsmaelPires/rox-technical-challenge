@@ -1,4 +1,5 @@
 import { Activity, Banknote, ClipboardList, Gauge, RefreshCw, ShieldCheck, WalletCards } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useState } from "react";
 import type { CashEntryOrigin } from "./api/types";
 import { BalancePanel } from "./features/balances/BalancePanel";
@@ -13,6 +14,38 @@ import { DailyBalanceReportButton } from "./features/reports/DailyBalanceReportB
 const today = new Date().toISOString().slice(0, 10);
 type AppTab = "entries" | "business-validation" | "load-test";
 
+const pageMetadata: Record<AppTab, { eyebrow: string; title: string }> = {
+  entries: {
+    eyebrow: "Operação financeira",
+    title: "Controle de caixa"
+  },
+  "load-test": {
+    eyebrow: "Resiliência",
+    title: "Teste de carga"
+  },
+  "business-validation": {
+    eyebrow: "Qualidade",
+    title: "Validação funcional"
+  }
+};
+
+const navigationGroups = [
+  {
+    label: "Fluxo de caixa",
+    items: [{ value: "entries", label: "Lançamentos", Icon: WalletCards }]
+  },
+  {
+    label: "Operações técnicas",
+    items: [
+      { value: "load-test", label: "Teste de carga", Icon: Gauge },
+      { value: "business-validation", label: "Validação funcional", Icon: ShieldCheck }
+    ]
+  }
+] satisfies Array<{
+  label: string;
+  items: Array<{ value: AppTab; label: string; Icon: LucideIcon }>;
+}>;
+
 const originOptions = [
   { value: "Business", Icon: WalletCards },
   { value: "Validation", Icon: ShieldCheck },
@@ -25,6 +58,7 @@ export function App() {
   const [origin, setOrigin] = useState<CashEntryOrigin>("Business");
   const [refreshKey, setRefreshKey] = useState(0);
   const [activeTab, setActiveTab] = useState<AppTab>("entries");
+  const activePage = pageMetadata[activeTab];
   const selectedOriginLabel = originLabels[origin];
   const selectedOriginDescription = originDescriptions[origin];
 
@@ -33,114 +67,130 @@ export function App() {
   }
 
   return (
-    <main className="app-shell">
-      <header className="topbar">
-        <div>
-          <span className="eyebrow">ROX Technical Challenge</span>
-          <h1>Controle de caixa</h1>
+    <main className="app-layout">
+      <aside className="sidebar" aria-label="Menu principal">
+        <div className="sidebar-brand">
+          <span className="brand-mark">
+            <Banknote size={20} />
+          </span>
+          <div>
+            <strong>ROX</strong>
+            <span>Financial Control</span>
+          </div>
         </div>
-        <button className="icon-button icon-button--primary" onClick={refresh} title="Atualizar">
-          <RefreshCw size={18} />
-        </button>
-      </header>
 
-      <nav className="tabs" aria-label="Navegação principal">
-        <button
-          className={activeTab === "entries" ? "tab tab--active" : "tab"}
-          onClick={() => setActiveTab("entries")}
-          type="button"
-        >
-          Lançamentos
-        </button>
-        <button
-          className={activeTab === "load-test" ? "tab tab--active" : "tab"}
-          onClick={() => setActiveTab("load-test")}
-          type="button"
-        >
-          Teste de carga
-        </button>
-        <button
-          className={activeTab === "business-validation" ? "tab tab--active" : "tab"}
-          onClick={() => setActiveTab("business-validation")}
-          type="button"
-        >
-          Validação funcional
-        </button>
-      </nav>
-
-      {activeTab === "entries" ? (
-        <>
-          <section className="toolbar" aria-label="Filtros">
-            <label>
-              <span>Início</span>
-              <input type="date" value={from} onChange={(event) => setFrom(event.target.value)} />
-            </label>
-            <label>
-              <span>Fim</span>
-              <input type="date" value={to} onChange={(event) => setTo(event.target.value)} />
-            </label>
-            <fieldset className="origin-filter">
-              <legend>Origem</legend>
-              <div className="origin-filter__options">
-                {originOptions.map(({ value, Icon }) => (
+        <nav className="sidebar-nav">
+          {navigationGroups.map((group) => (
+            <div className="sidebar-section" key={group.label}>
+              <span className="sidebar-section-title">{group.label}</span>
+              <div className="sidebar-submenu">
+                {group.items.map(({ value, label, Icon }) => (
                   <button
-                    aria-pressed={origin === value}
-                    className={origin === value ? "origin-choice origin-choice--active" : "origin-choice"}
+                    className={activeTab === value ? "sidebar-link sidebar-link--active" : "sidebar-link"}
                     key={value}
-                    onClick={() => setOrigin(value)}
-                    title={originDescriptions[value]}
+                    onClick={() => setActiveTab(value)}
                     type="button"
                   >
-                    <Icon size={16} />
-                    <span>{originLabels[value]}</span>
+                    <Icon size={18} />
+                    <span>{label}</span>
                   </button>
                 ))}
               </div>
-            </fieldset>
-            <DailyBalanceReportButton from={from} to={to} origin={origin} />
-          </section>
+            </div>
+          ))}
+        </nav>
 
-          <section className="kpi-grid" aria-label="Resumo operacional">
-            <BalancePanel from={from} to={to} origin={origin} refreshKey={refreshKey} />
-            <OutboxPanel refreshKey={refreshKey} />
-          </section>
+        <div className="sidebar-status">
+          <Activity size={16} />
+          <span>Ambiente local</span>
+        </div>
+      </aside>
 
-          <section className="workspace-grid">
-            <div className="panel panel--form">
-              <div className="panel-heading">
-                <Banknote size={20} />
-                <h2>{origin === "Business" ? "Novo lançamento" : "Origem selecionada"}</h2>
-              </div>
-              {origin === "Business" ? (
-                <CashEntryForm onCreated={refresh} defaultDate={today} />
-              ) : (
-                <div className="origin-summary">
-                  <span>{selectedOriginDescription}</span>
-                  <strong>{selectedOriginLabel}</strong>
-                  <small>Consulta separada dos lançamentos reais.</small>
+      <section className="content-shell">
+        <header className="topbar">
+          <div>
+            <span className="eyebrow">{activePage.eyebrow}</span>
+            <h1>{activePage.title}</h1>
+          </div>
+          <button className="icon-button icon-button--primary" onClick={refresh} title="Atualizar">
+            <RefreshCw size={18} />
+          </button>
+        </header>
+
+        {activeTab === "entries" ? (
+          <>
+            <section className="toolbar" aria-label="Filtros">
+              <label>
+                <span>Início</span>
+                <input type="date" value={from} onChange={(event) => setFrom(event.target.value)} />
+              </label>
+              <label>
+                <span>Fim</span>
+                <input type="date" value={to} onChange={(event) => setTo(event.target.value)} />
+              </label>
+              <fieldset className="origin-filter">
+                <legend>Origem</legend>
+                <div className="origin-filter__options">
+                  {originOptions.map(({ value, Icon }) => (
+                    <button
+                      aria-pressed={origin === value}
+                      className={origin === value ? "origin-choice origin-choice--active" : "origin-choice"}
+                      key={value}
+                      onClick={() => setOrigin(value)}
+                      title={originDescriptions[value]}
+                      type="button"
+                    >
+                      <Icon size={16} />
+                      <span>{originLabels[value]}</span>
+                    </button>
+                  ))}
                 </div>
-              )}
-            </div>
+              </fieldset>
+              <DailyBalanceReportButton from={from} to={to} origin={origin} />
+            </section>
 
-            <div className="panel panel--table">
-              <div className="panel-heading">
-                <ClipboardList size={20} />
-                <h2>Lançamentos - {selectedOriginLabel}</h2>
+            <section className="kpi-grid" aria-label="Resumo operacional">
+              <BalancePanel from={from} to={to} origin={origin} refreshKey={refreshKey} />
+              <OutboxPanel refreshKey={refreshKey} />
+            </section>
+
+            <section className="workspace-grid">
+              <div className="panel panel--form">
+                <div className="panel-heading">
+                  <Banknote size={20} />
+                  <h2>{origin === "Business" ? "Novo lançamento" : "Origem selecionada"}</h2>
+                </div>
+                {origin === "Business" ? (
+                  <CashEntryForm onCreated={refresh} defaultDate={today} />
+                ) : (
+                  <div className="origin-summary">
+                    <span>{selectedOriginDescription}</span>
+                    <strong>{selectedOriginLabel}</strong>
+                    <small>Consulta separada dos lançamentos reais.</small>
+                  </div>
+                )}
               </div>
-              <CashEntryTable from={from} to={to} origin={origin} refreshKey={refreshKey} />
-            </div>
-          </section>
-        </>
-      ) : activeTab === "load-test" ? (
-        <LoadSimulationPanel defaultDate={today} onActivity={refresh} />
-      ) : (
-        <BusinessValidationPanel defaultDate={today} onActivity={refresh} />
-      )}
 
-      <footer className="footer-note">
-        <Activity size={16} />
-        <span>API, outbox, RabbitMQ worker e SQL Server preparados para execução local ou Docker.</span>
-      </footer>
+              <div className="panel panel--table">
+                <div className="panel-heading">
+                  <ClipboardList size={20} />
+                  <h2>Lançamentos - {selectedOriginLabel}</h2>
+                </div>
+                <CashEntryTable from={from} to={to} origin={origin} refreshKey={refreshKey} />
+              </div>
+            </section>
+          </>
+        ) : activeTab === "load-test" ? (
+          <LoadSimulationPanel defaultDate={today} onActivity={refresh} />
+        ) : (
+          <BusinessValidationPanel defaultDate={today} onActivity={refresh} />
+        )}
+
+        <footer className="footer-note">
+          <Activity size={16} />
+          <span>API, outbox, RabbitMQ worker e SQL Server preparados para execução local ou Docker.</span>
+        </footer>
+      </section>
     </main>
   );
 }
